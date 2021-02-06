@@ -22,6 +22,7 @@ from tqdm import tqdm
 
 from utils.general import xyxy2xywh, xywh2xyxy, xywhn2xyxy, clean_str
 from utils.torch_utils import torch_distributed_zero_first
+import albumentations as A
 
 # Parameters
 help_url = 'https://github.com/ultralytics/yolov5/wiki/Train-Custom-Data'
@@ -29,10 +30,21 @@ img_formats = ['bmp', 'jpg', 'jpeg', 'png', 'tif', 'tiff', 'dng']  # acceptable 
 vid_formats = ['mov', 'avi', 'mp4', 'mpg', 'mpeg', 'm4v', 'wmv', 'mkv']  # acceptable video suffixes
 logger = logging.getLogger(__name__)
 
+CLAHE = False
+clahe2 = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+clahe4 = cv2.createCLAHE(clipLimit=4.0, tileGridSize=(8, 8))
+
 # Get orientation exif tag
 for orientation in ExifTags.TAGS.keys():
     if ExifTags.TAGS[orientation] == 'Orientation':
         break
+
+train_transforms = A.Compose([
+    A.RandomBrightnessContrast(p=0.4),
+    A.IAAEmboss(p=0.2),
+    A.IAASharpen(p=0.1, alpha=(0.05, 0.1)),
+    A.IAAAdditiveGaussianNoise(p=0.3)
+])
 
 
 def get_hash(files):
@@ -176,7 +188,13 @@ class LoadImages:  # for inference
         else:
             # Read image
             self.count += 1
-            img0 = cv2.imread(path)  # BGR
+            if not CLAHE:
+                img0 = cv2.imread(path)  # BGR
+                img0o = img0
+            else:
+                img0o = cv2.imread(path)
+                img0 = cv2.imread(path, 0)  # BGR
+                img0 = np.stack([img0, clahe2.apply(img0), clahe4.apply(img0)]).transpose((1, 2, 0))
             assert img0 is not None, 'Image Not Found ' + path
             print(f'image {self.count}/{self.nf} {path}: ', end='')
 
@@ -187,7 +205,7 @@ class LoadImages:  # for inference
         img = img[:, :, ::-1].transpose(2, 0, 1)  # BGR to RGB, to 3x416x416
         img = np.ascontiguousarray(img)
 
-        return path, img, img0, self.cap
+        return path, img, img0o, self.cap
 
     def new_video(self, path):
         self.frame = 0
@@ -536,8 +554,12 @@ class LoadImagesAndLabels(Dataset):  # for training/testing
                                                  shear=hyp['shear'],
                                                  perspective=hyp['perspective'])
 
-            # Augment colorspace
+            #Augment colorspace
             augment_hsv(img, hgain=hyp['hsv_h'], sgain=hyp['hsv_s'], vgain=hyp['hsv_v'])
+            # Augment brightness
+            # img = train_transforms(image=img)["image"]
+            # if random.random() < 0.3:
+            #     img = hist_equalize(img, cliplimit=random.random()*4.0)
 
             # Apply cutouts
             # if random.random() < 0.9:
@@ -612,7 +634,11 @@ def load_image(self, index):
     img = self.imgs[index]
     if img is None:  # not cached
         path = self.img_files[index]
-        img = cv2.imread(path)  # BGR
+        if not CLAHE:
+            img = cv2.imread(path)  # BGR
+        else:
+            img = cv2.imread(path, 0)  # BGR
+            img = np.stack([img, clahe2.apply(img), clahe4.apply(img)]).transpose((1, 2, 0))
         assert img is not None, 'Image Not Found ' + path
         h0, w0 = img.shape[:2]  # orig hw
         r = self.img_size / max(h0, w0)  # resize image to img_size
@@ -638,11 +664,11 @@ def augment_hsv(img, hgain=0.5, sgain=0.5, vgain=0.5):
     cv2.cvtColor(img_hsv, cv2.COLOR_HSV2BGR, dst=img)  # no return needed
 
 
-def hist_equalize(img, clahe=True, bgr=False):
+def hist_equalize(img, cliplimit=2.0, clahe=True, bgr=True):
     # Equalize histogram on BGR image 'img' with img.shape(n,m,3) and range 0-255
     yuv = cv2.cvtColor(img, cv2.COLOR_BGR2YUV if bgr else cv2.COLOR_RGB2YUV)
     if clahe:
-        c = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+        c = cv2.createCLAHE(clipLimit=cliplimit, tileGridSize=(8, 8))
         yuv[:, :, 0] = c.apply(yuv[:, :, 0])
     else:
         yuv[:, :, 0] = cv2.equalizeHist(yuv[:, :, 0])  # equalize Y channel histogram
@@ -989,7 +1015,11 @@ def extract_boxes(path='../coco128/'):  # from utils.datasets import *; extract_
     for im_file in tqdm(files, total=n):
         if im_file.suffix[1:] in img_formats:
             # image
-            im = cv2.imread(str(im_file))[..., ::-1]  # BGR to RGB
+            if not CLAHE:
+                im = cv2.imread(str(im_file))[..., ::-1]  # BGR to RGB
+            else:
+                im = cv2.imread(str(im_file), 0)  # BGR to RGB
+                im = np.stack([im, clahe2.apply(im), clahe4.apply(im)]).transpose((1, 2, 0))[..., ::-1]
             h, w = im.shape[:2]
 
             # labels
