@@ -45,11 +45,11 @@ train_transforms = A.Compose([
                 A.IAASharpen(),
                 A.IAAEmboss(),
                 A.RandomBrightnessContrast(),
-            ], p=0.3),
+            ], p=0.35),
     A.OneOf([
                 A.IAAAdditiveGaussianNoise(),
                 A.GaussNoise(),
-            ], p=0.3)
+            ], p=0.15)
 ])
 
 
