@@ -28,7 +28,8 @@ run.sh
 
 storage.googleapis.com
 runs/*
-data/*
+data/images/*
+data/scripts/*
 !data/images/zidane.jpg
 !data/images/bus.jpg
 !data/coco.names
