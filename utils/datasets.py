@@ -40,11 +40,16 @@ for orientation in ExifTags.TAGS.keys():
         break
 
 train_transforms = A.Compose([
-    A.RandomBrightnessContrast(p=0.5),
-    A.IAAEmboss(p=0.2),
-    # A.IAASharpen(p=0.1, alpha=(0.05, 0.1)),
-    A.IAAAdditiveGaussianNoise(p=0.3),
-    A.CLAHE(clip_limit=3.0, p=0.5)
+    A.OneOf([
+                A.CLAHE(clip_limit=2),
+                A.IAASharpen(),
+                A.IAAEmboss(),
+                A.RandomBrightnessContrast(),
+            ], p=0.3),
+    A.OneOf([
+                A.IAAAdditiveGaussianNoise(),
+                A.GaussNoise(),
+            ], p=0.3)
 ])
 
 
