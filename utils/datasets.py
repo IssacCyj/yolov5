@@ -40,10 +40,11 @@ for orientation in ExifTags.TAGS.keys():
         break
 
 train_transforms = A.Compose([
-    A.RandomBrightnessContrast(p=0.4),
+    A.RandomBrightnessContrast(p=0.5),
     A.IAAEmboss(p=0.2),
-    A.IAASharpen(p=0.1, alpha=(0.05, 0.1)),
-    A.IAAAdditiveGaussianNoise(p=0.3)
+    # A.IAASharpen(p=0.1, alpha=(0.05, 0.1)),
+    A.IAAAdditiveGaussianNoise(p=0.3),
+    A.CLAHE(clip_limit=3.0, p=0.5)
 ])
 
 
@@ -554,10 +555,10 @@ class LoadImagesAndLabels(Dataset):  # for training/testing
                                                  shear=hyp['shear'],
                                                  perspective=hyp['perspective'])
 
-            #Augment colorspace
-            augment_hsv(img, hgain=hyp['hsv_h'], sgain=hyp['hsv_s'], vgain=hyp['hsv_v'])
+            # #Augment colorspace
+            # augment_hsv(img, hgain=hyp['hsv_h'], sgain=hyp['hsv_s'], vgain=hyp['hsv_v'])
             # Augment brightness
-            # img = train_transforms(image=img)["image"]
+            img = train_transforms(image=img)["image"]
             # if random.random() < 0.3:
             #     img = hist_equalize(img, cliplimit=random.random()*4.0)
 
