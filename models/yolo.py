@@ -14,6 +14,9 @@ from utils.general import make_divisible, check_file, set_logging
 from utils.torch_utils import time_synchronized, fuse_conv_and_bn, model_info, scale_img, initialize_weights, \
     select_device, copy_attr
 
+import cv2
+import torchvision.transforms.functional as TF
+
 try:
     import thop  # for FLOPS computation
 except ImportError:
@@ -101,13 +104,21 @@ class Model(nn.Module):
     def forward(self, x, augment=False, profile=False):
         if augment:
             img_size = x.shape[-2:]  # height, width
-            s = [1, 0.83, 0.67]  # scales
-            f = [None, 3, None]  # flips (2-ud, 3-lr)
+            s = [1, 1, 1, 1]  # scales
+            f = [None, 3, None, None]  # flips (2-ud, 3-lr)
+            c = [1., 1., 1.3, 1.]
+            b = [1., 1., 1.3, 1.4]
+
             y = []  # outputs
-            for si, fi in zip(s, f):
+            for si, fi, ci, bi in zip(s, f, c, b):
                 xi = scale_img(x.flip(fi) if fi else x, si, gs=int(self.stride.max()))
+                xi = TF.adjust_brightness(xi, bi)
+                xi = TF.adjust_contrast(xi, ci)
                 yi = self.forward_once(xi)[0]  # forward
-                # cv2.imwrite(f'img_{si}.jpg', 255 * xi[0].cpu().numpy().transpose((1, 2, 0))[:, :, ::-1])  # save
+                # #visualize
+                # imw = 255 * xi[0].cpu().numpy().transpose((1, 2, 0))
+                # imw = cv2.cvtColor(np.float32(imw), cv2.COLOR_BGR2RGB)
+                # cv2.imwrite(f'img_{si}.jpg', imw)  # save
                 yi[..., :4] /= si  # de-scale
                 if fi == 2:
                     yi[..., 1] = img_size[0] - yi[..., 1]  # de-flip ud

@@ -21,7 +21,7 @@ def filter_2cls(row, low_thr=low_thr, high_thr=high_thr):
     return row
 
 
-pred_14cls = pd.read_csv('/home/yujia/Desktop/kaggle/Detection/60_01_4_f1_aug.csv')
+pred_14cls = pd.read_csv('/home/yujia/Desktop/kaggle/Detection/orig_f1_c01_i4_newaug.csv')
 pred_2cls = pd.read_csv('/home/yujia/Desktop/kaggle/VINXChest/Classification/classification.csv')
 
 
@@ -30,6 +30,6 @@ if __name__ == "__main__":
 
     sub = pred.apply(filter_2cls, axis=1)
     print(sub[sub['PredictionString']=='14 1 0 0 1 1'].shape[0])
-    sub[['image_id', 'PredictionString']].to_csv('/home/yujia/Desktop/kaggle/Detection/0190_60_01_4_f1_aug.csv', index=False)
+    sub[['image_id', 'PredictionString']].to_csv('/home/yujia/Desktop/kaggle/Detection/orig_f1_c01_i4_newaug_2cls.csv', index=False)
 
 
