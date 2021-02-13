@@ -377,7 +377,7 @@ def train(hyp, opt, device, tb_writer=None, wandb=None):
                 best_fitness = fi
 
             # Save model
-            save_path = wdir / f"epoch{epoch}.pt"
+            save_path = wdir / f"epoch{epoch}_map05_{int(fi*1000)}.pt"
             save = (not opt.nosave) or (final_epoch and not opt.evolve)
             if save:
                 with open(results_file, 'r') as f:  # create checkpoint
@@ -394,6 +394,9 @@ def train(hyp, opt, device, tb_writer=None, wandb=None):
                     torch.save(ckpt, save_path)
                 if best_fitness == fi:
                     print(f"Saving the best checkpoint at epoch: {epoch}.")
+                    if os.path.exists(best):
+                        os.remove(best)
+                    best = wdir / f'best_epoch{epoch}_map05_{int(fi * 1000)}.pt'
                     torch.save(ckpt, best)
                 del ckpt
         # end epoch ----------------------------------------------------------------------------------------------------
