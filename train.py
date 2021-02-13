@@ -370,10 +370,14 @@ def train(hyp, opt, device, tb_writer=None, wandb=None):
 
             # Update best mAP
             fi = fitness(np.array(results).reshape(1, -1))  # weighted combination of [P, R, mAP@.5, mAP@.5-.95]
+            if tb_writer:
+                tb_writer.add_scalar('metrics/fitness', fi, epoch)  # tensorboard
+
             if fi > best_fitness:
                 best_fitness = fi
 
             # Save model
+            save_path = wdir / f"epoch{epoch}.pt"
             save = (not opt.nosave) or (final_epoch and not opt.evolve)
             if save:
                 with open(results_file, 'r') as f:  # create checkpoint
@@ -381,12 +385,15 @@ def train(hyp, opt, device, tb_writer=None, wandb=None):
                             'best_fitness': best_fitness,
                             'training_results': f.read(),
                             'model': ema.ema,
-                            'optimizer': None if final_epoch else optimizer.state_dict(),
+                            'optimizer': None if not final_epoch else optimizer.state_dict(),
                             'wandb_id': wandb_run.id if wandb else None}
+                    ckpt['model'].half()
 
                 # Save last, best and delete
-                torch.save(ckpt, last)
+                if epoch > 10:
+                    torch.save(ckpt, save_path)
                 if best_fitness == fi:
+                    print(f"Saving the best checkpoint at epoch: {epoch}.")
                     torch.save(ckpt, best)
                 del ckpt
         # end epoch ----------------------------------------------------------------------------------------------------
@@ -395,9 +402,9 @@ def train(hyp, opt, device, tb_writer=None, wandb=None):
     if rank in [-1, 0]:
         # Strip optimizers
         final = best if best.exists() else last  # final model
-        for f in [last, best]:
-            if f.exists():
-                strip_optimizer(f)  # strip optimizers
+        # for f in [last, best]:
+        #     if f.exists():
+        #         strip_optimizer(f)  # strip optimizers
         if opt.bucket:
             os.system(f'gsutil cp {final} gs://{opt.bucket}/weights')  # upload
 

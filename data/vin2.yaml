@@ -14,8 +14,8 @@
 #test: /media/data/VinBigData/VinBigData3xDownsample/train/pos_neg_nms_dataset/images/test_split
 
 #2. pos images with original bbox
-train: /media/data/VinBigData/VinBigData3xDownsample/train/pos_original_fold_1_dataset/images/train_split
-val: /media/data/VinBigData/VinBigData3xDownsample/train/pos_original_fold_1_dataset/images/val_split
+train: /media/data/VinBigData/vinbigdata/pos_original_fold_1_dataset/images/train_split
+val: /media/data/VinBigData/vinbigdata/pos_wbf_fold_1_dataset/images/val_split
 
 
 # number of classes

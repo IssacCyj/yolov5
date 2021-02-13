@@ -30,7 +30,7 @@ if __name__ == "__main__":
     image_ids = []
     PredictionStrings = []
 
-    for file_path in tqdm(glob('/home/yujia/Desktop/kaggle/yolov5/runs/detect/orig_f1_c01_i4_newaug/labels/*txt')):
+    for file_path in tqdm(glob('/home/yujia/Desktop/kaggle/yolov5/runs/detect/orig_f1_1024_c01_i4_c1_26/labels/*txt')):
         image_id = file_path.split('/')[-1].split('.')[0]
         w, h = test_df.loc[test_df.image_id == image_id, ['width', 'height']].values[0]
         f = open(file_path, 'r')
@@ -49,5 +49,5 @@ if __name__ == "__main__":
     sub_df = sub_df[['image_id', 'PredictionString']]
     num_neg = len(sub_df[sub_df['PredictionString'] == "14 1 0 0 1 1"])
     print(f"neg predictions: {num_neg}")
-    sub_df.to_csv('/home/yujia/Desktop/kaggle/Detection/orig_f1_c01_i4_newaug.csv', index=False)
+    sub_df.to_csv('/home/yujia/Desktop/kaggle/Detection/orig_f1_1024_c01_i4_c1_26.csv', index=False)
     sub_df.tail()
